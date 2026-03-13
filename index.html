@@ -137,104 +137,6 @@ tr:hover td{background:rgba(88,166,255,.04)}
 </div>
 
 <script>
-// ── Sample Data ──
-const SAMPLE_PROGRESS = {
-  projects: [
-    {
-      id: "proj-001", name: "ECサイトリニューアル", owner: "田中太郎",
-      status: "in_progress", priority: "high",
-      progress: 65, budget: 5000000, spent: 3200000,
-      start_date: "2026-01-15", due_date: "2026-04-30",
-      tasks: [
-        { name: "デザインカンプ作成", status: "done" },
-        { name: "フロントエンド実装", status: "in_progress" },
-        { name: "バックエンドAPI開発", status: "in_progress" },
-        { name: "テスト・QA", status: "todo" }
-      ]
-    },
-    {
-      id: "proj-002", name: "社内チャットボット導入", owner: "佐藤花子",
-      status: "review", priority: "medium",
-      progress: 90, budget: 2000000, spent: 1850000,
-      start_date: "2025-11-01", due_date: "2026-03-15",
-      tasks: [
-        { name: "要件定義", status: "done" },
-        { name: "モデル選定・PoC", status: "done" },
-        { name: "本番環境構築", status: "done" },
-        { name: "ユーザーテスト", status: "review" }
-      ]
-    },
-    {
-      id: "proj-003", name: "データ基盤マイグレーション", owner: "鈴木一郎",
-      status: "in_progress", priority: "high",
-      progress: 40, budget: 8000000, spent: 3100000,
-      start_date: "2026-02-01", due_date: "2026-07-31",
-      tasks: [
-        { name: "現行システム調査", status: "done" },
-        { name: "移行計画策定", status: "done" },
-        { name: "ETLパイプライン構築", status: "in_progress" },
-        { name: "データ検証", status: "todo" },
-        { name: "切り替え・運用開始", status: "todo" }
-      ]
-    },
-    {
-      id: "proj-004", name: "モバイルアプリv2", owner: "高橋美咲",
-      status: "todo", priority: "medium",
-      progress: 0, budget: 3000000, spent: 0,
-      start_date: "2026-04-01", due_date: "2026-09-30",
-      tasks: [
-        { name: "要件整理", status: "todo" },
-        { name: "UI/UXデザイン", status: "todo" },
-        { name: "開発", status: "todo" },
-        { name: "リリース準備", status: "todo" }
-      ]
-    },
-    {
-      id: "proj-005", name: "セキュリティ監査対応", owner: "山田健二",
-      status: "done", priority: "high",
-      progress: 100, budget: 1500000, spent: 1420000,
-      start_date: "2025-10-01", due_date: "2026-01-31",
-      tasks: [
-        { name: "脆弱性スキャン", status: "done" },
-        { name: "修正対応", status: "done" },
-        { name: "再監査", status: "done" }
-      ]
-    },
-    {
-      id: "proj-006", name: "CRM統合プロジェクト", owner: "伊藤直美",
-      status: "review", priority: "low",
-      progress: 85, budget: 2500000, spent: 2100000,
-      start_date: "2025-12-01", due_date: "2026-03-31",
-      tasks: [
-        { name: "API連携設計", status: "done" },
-        { name: "データ同期実装", status: "done" },
-        { name: "受入テスト", status: "review" }
-      ]
-    }
-  ]
-};
-
-const SAMPLE_GROWTH = {
-  member: { name: "田中太郎", role: "シニアエンジニア", team: "プラットフォーム" },
-  skills: [
-    { name: "TypeScript", level: 4, max: 5 },
-    { name: "AWS", level: 3, max: 5 },
-    { name: "システム設計", level: 3, max: 5 },
-    { name: "チームリード", level: 2, max: 5 },
-    { name: "データベース設計", level: 4, max: 5 }
-  ],
-  goals: [
-    { title: "AWS Solutions Architect取得", due: "2026-06-30", status: "in_progress" },
-    { title: "テックブログ月1本投稿", due: "2026-12-31", status: "in_progress" },
-    { title: "新人メンター完了", due: "2026-03-31", status: "done" },
-    { title: "マイクロサービス設計研修", due: "2026-09-30", status: "todo" }
-  ],
-  feedback: [
-    { from: "佐藤花子", date: "2026-02-15", text: "API設計のレビューが的確で助かりました" },
-    { from: "鈴木一郎", date: "2026-01-20", text: "障害対応のリードありがとうございました" }
-  ]
-};
-
 // ── State ──
 let progressData = null;
 let growthData = null;
@@ -277,8 +179,8 @@ async function loadJson(path) {
 }
 
 async function init() {
-  progressData = await loadJson("progress.json") || SAMPLE_PROGRESS;
-  growthData = await loadJson("../personal/growth.json") || SAMPLE_GROWTH;
+  progressData = await loadJson("progress.json");
+  growthData = await loadJson("../personal/growth.json");
 
   document.getElementById("lastUpdated").textContent =
     "最終更新: " + new Date().toLocaleString("ja-JP");
@@ -300,8 +202,16 @@ document.getElementById("tabs").addEventListener("click", (e) => {
 });
 
 // ── Kanban View ──
+function renderEmpty(el, message) {
+  el.innerHTML = `<div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-size:1rem">${escHtml(message)}</div>`;
+}
+
 function renderKanban() {
   const el = document.getElementById("view-kanban");
+  if (!progressData || !progressData.projects || progressData.projects.length === 0) {
+    renderEmpty(el, "プロジェクトはまだありません");
+    return;
+  }
   const cols = { todo: [], in_progress: [], review: [], done: [] };
 
   progressData.projects.forEach(p => {
@@ -340,6 +250,10 @@ function renderKanban() {
 // ── Summary View ──
 function renderSummary() {
   const el = document.getElementById("view-summary");
+  if (!progressData || !progressData.projects || progressData.projects.length === 0) {
+    renderEmpty(el, "プロジェクトはまだありません");
+    return;
+  }
   const projects = progressData.projects;
   const total = projects.length;
   const reviewCount = projects.filter(p => p.status === "review").length;
@@ -405,6 +319,10 @@ function renderSummary() {
 // ── CFO Report View ──
 function renderCfo() {
   const el = document.getElementById("view-cfo");
+  if (!progressData || !progressData.projects || progressData.projects.length === 0) {
+    renderEmpty(el, "プロジェクトはまだありません");
+    return;
+  }
   const projects = progressData.projects;
   const totalBudget = projects.reduce((s, p) => s + (p.budget || 0), 0);
   const totalSpent = projects.reduce((s, p) => s + (p.spent || 0), 0);
@@ -494,6 +412,10 @@ function renderCfo() {
 // ── Personal Dashboard View ──
 function renderPersonal() {
   const el = document.getElementById("view-personal");
+  if (!growthData) {
+    renderEmpty(el, "データはまだありません");
+    return;
+  }
   const g = growthData;
 
   const goalStatusMap = {

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>プロジェクトダッシュボード</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;
+  --text-muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;
+  --red:#f85149;--purple:#bc8cff;--orange:#f0883e;
+  --radius:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* Header */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header h1{font-size:1.25rem;font-weight:600}
+.header .meta{font-size:.8rem;color:var(--text-muted)}
+
+/* Tabs */
+.tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 24px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:12px 20px;cursor:pointer;font-size:.875rem;color:var(--text-muted);
+  border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Content */
+.content{padding:24px;max-width:1400px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card h3{font-size:.95rem;margin-bottom:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:500}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.stat .label{font-size:.8rem;color:var(--text-muted);margin-bottom:4px}
+.stat .value{font-size:1.75rem;font-weight:700}
+.stat .sub{font-size:.75rem;color:var(--text-muted);margin-top:4px}
+
+/* Kanban */
+.kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start}
+.kanban-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;min-height:200px}
+.kanban-col h3{font-size:.85rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.kanban-col h3 .count{background:var(--border);border-radius:10px;padding:1px 8px;font-size:.75rem}
+.kanban-item{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px;cursor:default;transition:border-color .15s}
+.kanban-item:hover{border-color:var(--accent)}
+.kanban-item .title{font-size:.85rem;font-weight:600;margin-bottom:6px}
+.kanban-item .meta{font-size:.75rem;color:var(--text-muted);display:flex;gap:8px;flex-wrap:wrap}
+.kanban-item .owner{font-size:.75rem;color:var(--purple)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-todo{background:var(--text-muted)}.dot-wip{background:var(--yellow)}
+.dot-review{background:var(--orange)}.dot-done{background:var(--green)}
+
+/* Priority badge */
+.badge{font-size:.65rem;padding:2px 6px;border-radius:4px;font-weight:600;text-transform:uppercase}
+.badge-high{background:rgba(248,81,73,.15);color:var(--red)}
+.badge-medium{background:rgba(210,153,34,.15);color:var(--yellow)}
+.badge-low{background:rgba(63,185,80,.15);color:var(--green)}
+
+/* Progress bar */
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--text-muted);font-weight:500;font-size:.8rem;text-transform:uppercase;letter-spacing:.3px}
+tr:hover td{background:rgba(88,166,255,.04)}
+
+/* CFO */
+.cfo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.metric-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{color:var(--text-muted);font-size:.85rem}
+.metric-value{font-weight:600;font-size:.85rem}
+
+/* Growth */
+.skill-item{margin-bottom:16px}
+.skill-header{display:flex;justify-content:space-between;margin-bottom:4px;font-size:.85rem}
+.skill-level{color:var(--accent);font-weight:600}
+.growth-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.goal-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.goal-item:last-child{border-bottom:none}
+.goal-status{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:4px}
+.goal-done{background:rgba(63,185,80,.15);color:var(--green)}
+.goal-wip{background:rgba(210,153,34,.15);color:var(--yellow)}
+.goal-todo{background:rgba(139,148,158,.15);color:var(--text-muted)}
+
+/* Responsive */
+@media(max-width:768px){
+  .header{padding:12px 16px}
+  .tabs{padding:0 12px}
+  .tab{padding:10px 14px;font-size:.8rem}
+  .content{padding:16px}
+  .kanban{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat .value{font-size:1.35rem}
+}
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>プロジェクトダッシュボード</h1>
+  <span class="meta" id="lastUpdated"></span>
+</div>
+
+<nav class="tabs" id="tabs">
+  <div class="tab active" data-view="kanban">カンバン</div>
+  <div class="tab" data-view="summary">サマリー</div>
+  <div class="tab" data-view="cfo">CFOレポート</div>
+  <div class="tab" data-view="personal">個人ダッシュボード</div>
+</nav>
+
+<div class="content">
+  <!-- Kanban View -->
+  <div class="view active" id="view-kanban"></div>
+  <!-- Summary View -->
+  <div class="view" id="view-summary"></div>
+  <!-- CFO View -->
+  <div class="view" id="view-cfo"></div>
+  <!-- Personal View -->
+  <div class="view" id="view-personal"></div>
+</div>
+
+<script>
+// ── Sample Data ──
+const SAMPLE_PROGRESS = {
+  projects: [
+    {
+      id: "proj-001", name: "ECサイトリニューアル", owner: "田中太郎",
+      status: "in_progress", priority: "high",
+      progress: 65, budget: 5000000, spent: 3200000,
+      start_date: "2026-01-15", due_date: "2026-04-30",
+      tasks: [
+        { name: "デザインカンプ作成", status: "done" },
+        { name: "フロントエンド実装", status: "in_progress" },
+        { name: "バックエンドAPI開発", status: "in_progress" },
+        { name: "テスト・QA", status: "todo" }
+      ]
+    },
+    {
+      id: "proj-002", name: "社内チャットボット導入", owner: "佐藤花子",
+      status: "review", priority: "medium",
+      progress: 90, budget: 2000000, spent: 1850000,
+      start_date: "2025-11-01", due_date: "2026-03-15",
+      tasks: [
+        { name: "要件定義", status: "done" },
+        { name: "モデル選定・PoC", status: "done" },
+        { name: "本番環境構築", status: "done" },
+        { name: "ユーザーテスト", status: "review" }
+      ]
+    },
+    {
+      id: "proj-003", name: "データ基盤マイグレーション", owner: "鈴木一郎",
+      status: "in_progress", priority: "high",
+      progress: 40, budget: 8000000, spent: 3100000,
+      start_date: "2026-02-01", due_date: "2026-07-31",
+      tasks: [
+        { name: "現行システム調査", status: "done" },
+        { name: "移行計画策定", status: "done" },
+        { name: "ETLパイプライン構築", status: "in_progress" },
+        { name: "データ検証", status: "todo" },
+        { name: "切り替え・運用開始", status: "todo" }
+      ]
+    },
+    {
+      id: "proj-004", name: "モバイルアプリv2", owner: "高橋美咲",
+      status: "todo", priority: "medium",
+      progress: 0, budget: 3000000, spent: 0,
+      start_date: "2026-04-01", due_date: "2026-09-30",
+      tasks: [
+        { name: "要件整理", status: "todo" },
+        { name: "UI/UXデザイン", status: "todo" },
+        { name: "開発", status: "todo" },
+        { name: "リリース準備", status: "todo" }
+      ]
+    },
+    {
+      id: "proj-005", name: "セキュリティ監査対応", owner: "山田健二",
+      status: "done", priority: "high",
+      progress: 100, budget: 1500000, spent: 1420000,
+      start_date: "2025-10-01", due_date: "2026-01-31",
+      tasks: [
+        { name: "脆弱性スキャン", status: "done" },
+        { name: "修正対応", status: "done" },
+        { name: "再監査", status: "done" }
+      ]
+    },
+    {
+      id: "proj-006", name: "CRM統合プロジェクト", owner: "伊藤直美",
+      status: "review", priority: "low",
+      progress: 85, budget: 2500000, spent: 2100000,
+      start_date: "2025-12-01", due_date: "2026-03-31",
+      tasks: [
+        { name: "API連携設計", status: "done" },
+        { name: "データ同期実装", status: "done" },
+        { name: "受入テスト", status: "review" }
+      ]
+    }
+  ]
+};
+
+const SAMPLE_GROWTH = {
+  member: { name: "田中太郎", role: "シニアエンジニア", team: "プラットフォーム" },
+  skills: [
+    { name: "TypeScript", level: 4, max: 5 },
+    { name: "AWS", level: 3, max: 5 },
+    { name: "システム設計", level: 3, max: 5 },
+    { name: "チームリード", level: 2, max: 5 },
+    { name: "データベース設計", level: 4, max: 5 }
+  ],
+  goals: [
+    { title: "AWS Solutions Architect取得", due: "2026-06-30", status: "in_progress" },
+    { title: "テックブログ月1本投稿", due: "2026-12-31", status: "in_progress" },
+    { title: "新人メンター完了", due: "2026-03-31", status: "done" },
+    { title: "マイクロサービス設計研修", due: "2026-09-30", status: "todo" }
+  ],
+  feedback: [
+    { from: "佐藤花子", date: "2026-02-15", text: "API設計のレビューが的確で助かりました" },
+    { from: "鈴木一郎", date: "2026-01-20", text: "障害対応のリードありがとうございました" }
+  ]
+};
+
+// ── State ──
+let progressData = null;
+let growthData = null;
+
+// ── Helpers ──
+const STATUS_MAP = {
+  todo: { label: "未着手", dot: "dot-todo" },
+  in_progress: { label: "進行中", dot: "dot-wip" },
+  review: { label: "承認待ち", dot: "dot-review" },
+  done: { label: "完了", dot: "dot-done" }
+};
+
+const PRIORITY_MAP = {
+  high: { label: "高", cls: "badge-high" },
+  medium: { label: "中", cls: "badge-medium" },
+  low: { label: "低", cls: "badge-low" }
+};
+
+function yen(n) {
+  return new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 }).format(n);
+}
+
+function pct(n) { return Math.round(n) + "%"; }
+
+function escHtml(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Data Loading ──
+async function loadJson(path) {
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text.trim()) return null;
+    return JSON.parse(text);
+  } catch { return null; }
+}
+
+async function init() {
+  progressData = await loadJson("progress.json") || SAMPLE_PROGRESS;
+  growthData = await loadJson("../personal/growth.json") || SAMPLE_GROWTH;
+
+  document.getElementById("lastUpdated").textContent =
+    "最終更新: " + new Date().toLocaleString("ja-JP");
+
+  renderKanban();
+  renderSummary();
+  renderCfo();
+  renderPersonal();
+}
+
+// ── Tab Switching ──
+document.getElementById("tabs").addEventListener("click", (e) => {
+  const tab = e.target.closest(".tab");
+  if (!tab) return;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  tab.classList.add("active");
+  document.getElementById("view-" + tab.dataset.view).classList.add("active");
+});
+
+// ── Kanban View ──
+function renderKanban() {
+  const el = document.getElementById("view-kanban");
+  const cols = { todo: [], in_progress: [], review: [], done: [] };
+
+  progressData.projects.forEach(p => {
+    if (cols[p.status]) cols[p.status].push(p);
+  });
+
+  const colMeta = [
+    { key: "todo", title: "未着手", dot: "dot-todo" },
+    { key: "in_progress", title: "進行中", dot: "dot-wip" },
+    { key: "review", title: "承認待ち", dot: "dot-review" },
+    { key: "done", title: "完了", dot: "dot-done" }
+  ];
+
+  el.innerHTML = '<div class="kanban">' + colMeta.map(c => `
+    <div class="kanban-col">
+      <h3><span class="dot ${c.dot}"></span>${c.title}<span class="count">${cols[c.key].length}</span></h3>
+      ${cols[c.key].map(p => `
+        <div class="kanban-item">
+          <div class="title">${escHtml(p.name)}</div>
+          <div class="meta">
+            <span class="badge ${PRIORITY_MAP[p.priority]?.cls || ''}">${PRIORITY_MAP[p.priority]?.label || p.priority}</span>
+            <span class="owner">${escHtml(p.owner)}</span>
+          </div>
+          ${p.progress != null ? `
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${p.progress}%;background:${p.progress === 100 ? 'var(--green)' : p.progress > 50 ? 'var(--accent)' : 'var(--yellow)'}"></div>
+          </div>
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:2px">${pct(p.progress)}</div>` : ''}
+        </div>
+      `).join("")}
+      ${cols[c.key].length === 0 ? '<div style="color:var(--text-muted);font-size:.8rem;text-align:center;padding:24px 0">なし</div>' : ''}
+    </div>
+  `).join("") + '</div>';
+}
+
+// ── Summary View ──
+function renderSummary() {
+  const el = document.getElementById("view-summary");
+  const projects = progressData.projects;
+  const total = projects.length;
+  const reviewCount = projects.filter(p => p.status === "review").length;
+  const doneCount = projects.filter(p => p.status === "done").length;
+  const totalBudget = projects.reduce((s, p) => s + (p.budget || 0), 0);
+  const totalSpent = projects.reduce((s, p) => s + (p.spent || 0), 0);
+  const avgProgress = projects.reduce((s, p) => s + (p.progress || 0), 0) / total;
+
+  el.innerHTML = `
+    <div class="stats">
+      <div class="stat">
+        <div class="label">全プロジェクト</div>
+        <div class="value">${total}</div>
+        <div class="sub">進行中 ${projects.filter(p => p.status === "in_progress").length} / 完了 ${doneCount}</div>
+      </div>
+      <div class="stat">
+        <div class="label">承認待ち</div>
+        <div class="value" style="color:var(--orange)">${reviewCount}</div>
+        <div class="sub">対応が必要です</div>
+      </div>
+      <div class="stat">
+        <div class="label">平均進捗</div>
+        <div class="value">${pct(avgProgress)}</div>
+        <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${avgProgress}%;background:var(--accent)"></div></div>
+      </div>
+      <div class="stat">
+        <div class="label">総予算</div>
+        <div class="value">${yen(totalBudget)}</div>
+        <div class="sub">消化 ${yen(totalSpent)} (${pct(totalSpent / totalBudget * 100)})</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>プロジェクト一覧</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>プロジェクト</th><th>担当</th><th>ステータス</th>
+            <th>優先度</th><th>進捗</th><th>予算消化</th><th>期限</th>
+          </tr></thead>
+          <tbody>
+            ${projects.map(p => `<tr>
+              <td style="font-weight:600">${escHtml(p.name)}</td>
+              <td>${escHtml(p.owner)}</td>
+              <td><span class="dot ${STATUS_MAP[p.status]?.dot || ''}"></span> ${STATUS_MAP[p.status]?.label || p.status}</td>
+              <td><span class="badge ${PRIORITY_MAP[p.priority]?.cls || ''}">${PRIORITY_MAP[p.priority]?.label || p.priority}</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="progress-bar" style="width:80px;flex-shrink:0"><div class="progress-fill" style="width:${p.progress}%;background:var(--accent)"></div></div>
+                  <span style="font-size:.8rem">${pct(p.progress)}</span>
+                </div>
+              </td>
+              <td>${p.budget ? yen(p.spent) + ' / ' + yen(p.budget) : '-'}</td>
+              <td style="font-size:.8rem">${p.due_date || '-'}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ── CFO Report View ──
+function renderCfo() {
+  const el = document.getElementById("view-cfo");
+  const projects = progressData.projects;
+  const totalBudget = projects.reduce((s, p) => s + (p.budget || 0), 0);
+  const totalSpent = projects.reduce((s, p) => s + (p.spent || 0), 0);
+  const remaining = totalBudget - totalSpent;
+  const burnRate = totalBudget > 0 ? (totalSpent / totalBudget * 100) : 0;
+
+  const overBudget = projects.filter(p => p.budget && p.spent > p.budget * 0.9);
+  const doneProjects = projects.filter(p => p.status === "done");
+  const doneBudget = doneProjects.reduce((s, p) => s + (p.budget || 0), 0);
+  const doneSpent = doneProjects.reduce((s, p) => s + (p.spent || 0), 0);
+  const savings = doneBudget - doneSpent;
+
+  el.innerHTML = `
+    <div class="stats">
+      <div class="stat">
+        <div class="label">総予算</div>
+        <div class="value">${yen(totalBudget)}</div>
+      </div>
+      <div class="stat">
+        <div class="label">総支出</div>
+        <div class="value" style="color:var(--yellow)">${yen(totalSpent)}</div>
+        <div class="sub">消化率 ${pct(burnRate)}</div>
+      </div>
+      <div class="stat">
+        <div class="label">残予算</div>
+        <div class="value" style="color:${remaining >= 0 ? 'var(--green)' : 'var(--red)'}">${yen(remaining)}</div>
+      </div>
+      <div class="stat">
+        <div class="label">完了PJ節約額</div>
+        <div class="value" style="color:var(--green)">${yen(savings)}</div>
+        <div class="sub">ROI指標</div>
+      </div>
+    </div>
+
+    <div class="cfo-grid">
+      <div class="card">
+        <h3>プロジェクト別コスト</h3>
+        ${projects.map(p => {
+          const ratio = p.budget ? (p.spent / p.budget * 100) : 0;
+          const color = ratio > 90 ? 'var(--red)' : ratio > 70 ? 'var(--yellow)' : 'var(--green)';
+          return `
+          <div class="metric-row">
+            <div>
+              <div style="font-size:.85rem;font-weight:600">${escHtml(p.name)}</div>
+              <div style="font-size:.75rem;color:var(--text-muted)">${p.budget ? yen(p.spent) + ' / ' + yen(p.budget) : '-'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:.85rem;font-weight:600;color:${color}">${pct(ratio)}</div>
+              <div class="progress-bar" style="width:80px;margin-top:4px"><div class="progress-fill" style="width:${Math.min(ratio, 100)}%;background:${color}"></div></div>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+
+      <div class="card">
+        <h3>リスク・注意事項</h3>
+        ${overBudget.length > 0 ? overBudget.map(p => `
+          <div class="metric-row">
+            <div>
+              <div style="font-size:.85rem;font-weight:600;color:var(--red)">${escHtml(p.name)}</div>
+              <div style="font-size:.75rem;color:var(--text-muted)">予算消化率が90%超</div>
+            </div>
+            <div class="metric-value" style="color:var(--red)">${pct(p.spent / p.budget * 100)}</div>
+          </div>
+        `).join("") : '<div style="color:var(--text-muted);font-size:.85rem;padding:16px 0">予算超過リスクのあるプロジェクトはありません</div>'}
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <h3 style="margin-bottom:8px">サマリー</h3>
+          <div class="metric-row">
+            <span class="metric-label">アクティブPJ数</span>
+            <span class="metric-value">${projects.filter(p => p.status !== "done").length}</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">完了PJ数</span>
+            <span class="metric-value">${doneProjects.length}</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">月間平均支出(概算)</span>
+            <span class="metric-value">${yen(Math.round(totalSpent / 3))}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Personal Dashboard View ──
+function renderPersonal() {
+  const el = document.getElementById("view-personal");
+  const g = growthData;
+
+  const goalStatusMap = {
+    done: { label: "完了", cls: "goal-done" },
+    in_progress: { label: "進行中", cls: "goal-wip" },
+    todo: { label: "未着手", cls: "goal-todo" }
+  };
+
+  el.innerHTML = `
+    <div class="stats">
+      <div class="stat">
+        <div class="label">氏名</div>
+        <div class="value" style="font-size:1.25rem">${escHtml(g.member?.name || '-')}</div>
+        <div class="sub">${escHtml(g.member?.role || '')} / ${escHtml(g.member?.team || '')}</div>
+      </div>
+      <div class="stat">
+        <div class="label">目標達成</div>
+        <div class="value" style="color:var(--green)">${g.goals ? g.goals.filter(x => x.status === "done").length : 0} / ${g.goals ? g.goals.length : 0}</div>
+      </div>
+      <div class="stat">
+        <div class="label">スキル数</div>
+        <div class="value">${g.skills ? g.skills.length : 0}</div>
+      </div>
+    </div>
+
+    <div class="growth-grid">
+      <div class="card">
+        <h3>スキルマップ</h3>
+        ${(g.skills || []).map(s => `
+          <div class="skill-item">
+            <div class="skill-header">
+              <span>${escHtml(s.name)}</span>
+              <span class="skill-level">${s.level} / ${s.max}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${(s.level / s.max) * 100}%;background:var(--accent)"></div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="card">
+        <h3>目標</h3>
+        ${(g.goals || []).map(x => `
+          <div class="goal-item">
+            <div style="font-size:.85rem;font-weight:600">${escHtml(x.title)}</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">期限: ${x.due || '-'}</div>
+            <span class="goal-status ${goalStatusMap[x.status]?.cls || 'goal-todo'}">${goalStatusMap[x.status]?.label || x.status}</span>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="card">
+        <h3>フィードバック</h3>
+        ${(g.feedback || []).length > 0 ? g.feedback.map(f => `
+          <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:.85rem">"${escHtml(f.text)}"</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">-- ${escHtml(f.from)} (${f.date})</div>
+          </div>
+        `).join("") : '<div style="color:var(--text-muted);font-size:.85rem">フィードバックはありません</div>'}
+      </div>
+    </div>
+  `;
+}
+
+// ── Start ──
+init();
+</script>
+</body>
+</html>
